@@ -1,0 +1,5 @@
+npm config set http-proxy=http://127.16.0.1:44355
+npm config set proxy=http://172.16.0.1:44355
+
+set http_proxy=http://172.16.0.1:44355
+set https_proxy=https://172.16.0.1:44355
