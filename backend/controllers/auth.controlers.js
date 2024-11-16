@@ -143,4 +143,23 @@ export const forgotPassword = async (req,res)=>{
 
 }
 
-
+export const resetPassword = async(req,res)=>{
+    const{token , password} = req.body;
+    if(!token || !password){
+        return res.status(400).json({msg:"require all fields"})
+    }
+    const user = await User.findOne({resetPasswordToken:token});
+    if(!user){
+        return res.status(404).json({msg:"user not found"})
+    }
+    if(user.resetTokenExpiresAt < Date.now()){
+        return res.status(400).json({msg:"token expired"})
+    }
+    const hashedPassword = await bcryptjs.hash(password,10);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiresAt = undefined;
+    await user.save();
+    return res.status(200).json({msg:"password reset successful"})
+    
+}
