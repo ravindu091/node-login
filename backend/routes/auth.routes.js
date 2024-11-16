@@ -1,5 +1,5 @@
 import express from 'express'
-import { login, logout, signup, verifyEmail } from '../controllers/auth.controlers.js';
+import { forgotPassword, login, logout, signup, verifyEmail } from '../controllers/auth.controlers.js';
 
 const router = express.Router();
 
@@ -11,5 +11,6 @@ router.post('/login', login)
 router.post('/logout',logout)  
 
 router.post('/verifyEmail',verifyEmail)
+router.post('/forgot-password', forgotPassword)
 
 export default router;
