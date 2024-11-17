@@ -1,8 +1,9 @@
 import { User } from'../models/user.model.js'
 import bcryptjs from 'bcryptjs';
 import { generateTokenAndSetCokkie } from '../utils/generateTokenAndSetCokkie.js';
-import { sendPasswordRestEmail, sendVerificationEmail } from '../mailtrap/emails.js';
+import { sendPasswordResetSuccessEmail, sendPasswordRestEmail, sendVerificationEmail } from '../mailtrap/emails.js';
 import crypto from 'crypto';
+import { log } from 'console';
 
 
 export const signup = async (req,res)=>{
@@ -77,7 +78,7 @@ export const verifyEmail = async (req,res)=>{
 
 }
 export const login = async (req,res)=>{
-    const {email , password} = req.body;
+    const {body:{password},token } = req;
     if(!email || !password){
         return res.send({msg:'invalid credentials'})
 
@@ -131,7 +132,7 @@ export const forgotPassword = async (req,res)=>{
     await user.save();
 
     //send email
-    await sendPasswordRestEmail(email,`${process.env.CLIENT_URL}/reset-password/${restToken}`)
+    await sendPasswordRestEmail(email,`${process.env.CLIENT_URL}/api/auth/reset-password/${restToken}`)
 
 
     return res.status(200).json({msg:"password reset email sent"})
@@ -144,22 +145,33 @@ export const forgotPassword = async (req,res)=>{
 }
 
 export const resetPassword = async(req,res)=>{
-    const{token , password} = req.body;
-    if(!token || !password){
-        return res.status(400).json({msg:"require all fields"})
-    }
-    const user = await User.findOne({resetPasswordToken:token});
-    if(!user){
-        return res.status(404).json({msg:"user not found"})
-    }
-    if(user.resetTokenExpiresAt < Date.now()){
+    try {
+        const {token} = req.params;
+        const {password} = req.body;
+        
+        
+        if(!token || !password){
+          return res.status(400).json({msg:"require all fields"})
+        }
+        const user = await User.findOne({resetPasswordToken:token});
+        
+        
+        if(!user){
+           return res.status(404).json({msg:"user not found"})
+        }
+        if(user.resetTokenExpiresAt < Date.now()){
         return res.status(400).json({msg:"token expired"})
+        }
+        const hashedPassword = await bcryptjs.hash(password,10);
+        user.password = hashedPassword;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpiresAt = undefined;
+        await user.save();
+        await sendPasswordResetSuccessEmail(user.email,user.name);
+        return res.status(200).json({msg:"password reset successful"})
+    } catch (error) {
+        console.log(error.message);
+        res.status(400).json({msg:error.message})
     }
-    const hashedPassword = await bcryptjs.hash(password,10);
-    user.password = hashedPassword;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpiresAt = undefined;
-    await user.save();
-    return res.status(200).json({msg:"password reset successful"})
-    
+
 }
