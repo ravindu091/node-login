@@ -78,7 +78,7 @@ export const verifyEmail = async (req,res)=>{
 
 }
 export const login = async (req,res)=>{
-    const {body:{password},token } = req;
+    const {body:{password ,email} } = req;
     if(!email || !password){
         return res.send({msg:'invalid credentials'})
 
@@ -174,4 +174,25 @@ export const resetPassword = async(req,res)=>{
         res.status(400).json({msg:error.message})
     }
 
+}
+
+export const checkAuth = async (req,res)=>{
+    
+    try{
+        const user = await User.findById(req.userId)
+        if(!user){
+            return res.status(404).json({msg:"user not found"})
+        }
+        res.status(200).json({
+            msg:'user authenticated',
+            user:{
+                email:user.email,
+                name:user.name,
+                lastLogin:user.lastLogin
+            }
+        })
+
+    }catch(error){
+
+    }
 }
